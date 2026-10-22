@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { colors } from './src/theme';
-import { useStore } from './src/store';
+import { setConfirmHandler, useStore } from './src/store';
 import Elapsed from './src/Elapsed';
 import OverviewScreen from './src/screens/OverviewScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
@@ -20,6 +20,9 @@ export default function App() {
   const [tab, setTab] = useState('workout');
   const [workoutOpen, setWorkoutOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [dialog, setDialog] = useState(null);
+
+  useEffect(() => setConfirmHandler(setDialog), []);
 
   if (!state) {
     return (
@@ -79,6 +82,29 @@ export default function App() {
           <TemplateEditor {...screenProps} template={editingTemplate} close={() => setEditingTemplate(null)} />
         </View>
       )}
+
+      {dialog && (
+        <View style={[StyleSheet.absoluteFill, styles.backdrop]}>
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>{dialog.title}</Text>
+            {!!dialog.message && <Text style={styles.dialogMsg}>{dialog.message}</Text>}
+            <View style={styles.dialogBtns}>
+              <Pressable hitSlop={8} onPress={() => setDialog(null)}>
+                <Text style={[styles.dialogBtn, { color: colors.muted }]}>CANCEL</Text>
+              </Pressable>
+              <Pressable
+                hitSlop={8}
+                onPress={() => {
+                  setDialog(null);
+                  dialog.onYes();
+                }}
+              >
+                <Text style={styles.dialogBtn}>{dialog.yesLabel.toUpperCase()}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -109,4 +135,10 @@ const styles = StyleSheet.create({
   tabIcon: { color: colors.muted, fontSize: 20, lineHeight: 24 },
   tabLabel: { color: colors.muted, fontSize: 12, marginTop: 2 },
   tabActive: { color: colors.text, fontWeight: '700' },
+  backdrop: { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 32 },
+  dialog: { backgroundColor: colors.card, borderRadius: 12, padding: 20 },
+  dialogTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },
+  dialogMsg: { color: colors.muted, fontSize: 15, marginTop: 8 },
+  dialogBtns: { flexDirection: 'row', justifyContent: 'flex-end', gap: 28, marginTop: 22 },
+  dialogBtn: { color: colors.accent, fontWeight: '700', letterSpacing: 1, fontSize: 14 },
 });

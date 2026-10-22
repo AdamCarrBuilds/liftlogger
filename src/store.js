@@ -29,10 +29,13 @@ export function useStore() {
   return [state, update];
 }
 
-// Alert.alert is a no-op on react-native-web, so fall back to window.confirm there.
+// Native uses Alert; web (where Alert is a no-op and window.confirm may be blocked) uses the in-app dialog in App.js.
+let confirmHandler = null;
+export const setConfirmHandler = (fn) => (confirmHandler = fn);
+
 export function confirm(title, message, onYes, yesLabel = 'OK') {
   if (Platform.OS === 'web') {
-    if (window.confirm(message ? `${title}\n\n${message}` : title)) onYes();
+    confirmHandler?.({ title, message, onYes, yesLabel });
     return;
   }
   Alert.alert(title, message, [

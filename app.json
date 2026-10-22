@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "LiftLogger",
+    "slug": "liftlogger",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#22282e",
+    "ios": { "supportsTablet": false },
+    "android": {},
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "LiftLogger",
+      "shortName": "LiftLogger",
+      "themeColor": "#22282e",
+      "backgroundColor": "#22282e"
+    }
+  }
+}

@@ -1,6 +1,6 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, s } from '../theme';
-import { confirm, uid } from '../store';
+import { confirm, nextTemplateId, uid } from '../store';
 
 export function workoutFromTemplate(template) {
   return {
@@ -20,7 +20,8 @@ export function workoutFromTemplate(template) {
   };
 }
 
-export default function WorkoutScreen({ state, update, openWorkout, editTemplate }) {
+export default function WorkoutScreen({ state, update, openWorkout, editTemplate, openSettings }) {
+  const nextId = nextTemplateId(state);
   const start = (template) => {
     const go = () => {
       update(() => ({ active: workoutFromTemplate(template) }));
@@ -38,7 +39,12 @@ export default function WorkoutScreen({ state, update, openWorkout, editTemplate
 
   return (
     <ScrollView style={s.screen} contentContainerStyle={s.content}>
-      <Text style={s.title}>Workout</Text>
+      <View style={[s.row, { justifyContent: 'space-between' }]}>
+        <Text style={s.title}>Workout</Text>
+        <Pressable hitSlop={12} onPress={openSettings} accessibilityLabel="Settings">
+          <Text style={{ color: colors.muted, fontSize: 22, fontWeight: '900' }}>•••</Text>
+        </Pressable>
+      </View>
 
       <Text style={[s.h2, { marginBottom: 12 }]}>Quick start</Text>
       <Pressable style={s.btn} onPress={() => (state.active ? openWorkout() : start(null))}>
@@ -54,7 +60,7 @@ export default function WorkoutScreen({ state, update, openWorkout, editTemplate
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
         {state.templates.map((t) => (
-          <Pressable key={t.id} style={[s.card, { width: '48.5%' }]} onPress={() => start(t)}>
+          <Pressable key={t.id} style={[s.card, { width: '48.5%' }, t.id === nextId && styles.next]} onPress={() => start(t)}>
             <View style={[s.row, { justifyContent: 'space-between', alignItems: 'flex-start' }]}>
               <Text style={[s.text, { fontWeight: '700', fontSize: 16, flex: 1 }]}>{t.name}</Text>
               <Pressable hitSlop={12} onPress={() => editTemplate(t)}>
@@ -64,7 +70,10 @@ export default function WorkoutScreen({ state, update, openWorkout, editTemplate
             <Text style={[s.muted, { marginTop: 8 }]} numberOfLines={3}>
               {t.exercises.map((e) => `${e.sets} × ${e.name}`).join(', ') || 'No exercises'}
             </Text>
-            <Text style={[s.muted, { marginTop: 8, fontSize: 12 }]}>◷ {lastDone(t)}</Text>
+            <Text style={[s.muted, { marginTop: 8, fontSize: 12 }]}>
+              ◷ {lastDone(t)}
+              {t.id === nextId && <Text style={{ color: colors.accent, fontWeight: '700' }}>{'  ·  UP NEXT'}</Text>}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -72,3 +81,7 @@ export default function WorkoutScreen({ state, update, openWorkout, editTemplate
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  next: { borderColor: colors.accent },
+});

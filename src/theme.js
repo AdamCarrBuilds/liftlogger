@@ -1,4 +1,4 @@
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const colors = {
   bg: '#22282e',
@@ -13,13 +13,6 @@ export const colors = {
   danger: '#e5534b',
   heat: ['#2f363d', '#0e4429', '#006d32', '#26a641', '#39d353'],
 };
-
-// iOS numeric pads have no minus key, so use a keyboard that does (negative weights = assisted lifts)
-export const numberKeyboard = Platform.select({
-  ios: 'numbers-and-punctuation',
-  android: 'numeric',
-  default: 'default',
-});
 
 export const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },

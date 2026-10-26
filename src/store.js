@@ -7,7 +7,12 @@ const KEY = 'liftlogger:v1';
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-const initial = { templates: seedTemplates, workouts: [], active: null, seedVersion: SEED_VERSION };
+export const defaultSettings = {
+  rotation: seedTemplates.map((t) => t.id),
+  gym: { enabled: false, lat: null, lng: null, radius: 150 },
+};
+
+const initial = { templates: seedTemplates, workouts: [], active: null, seedVersion: SEED_VERSION, settings: defaultSettings };
 
 const sameExercises = (a, b) =>
   a.length === b.length && a.every((e, i) => e.name === b[i][0] && e.sets === b[i][1] && e.reps === b[i][2]);
@@ -58,6 +63,29 @@ export function confirm(title, message, onYes, yesLabel = 'OK') {
   ]);
 }
 
+// Template ids in rotation order, skipping any that were deleted.
+export function rotationIds(state) {
+  const ids = new Set(state.templates.map((t) => t.id));
+  return (state.settings?.rotation || []).filter((id) => ids.has(id));
+}
+
+// The template after the most recent workout done from the rotation; the first one if none yet.
+export function nextTemplateId(state) {
+  const order = rotationIds(state);
+  if (!order.length) return null;
+  const last = state.workouts.find((w) => order.includes(w.templateId));
+  return last ? order[(order.indexOf(last.templateId) + 1) % order.length] : order[0];
+}
+
+// A finished workout keeps only ticked sets; null when nothing was ticked.
+export function finishedWorkout(active) {
+  const exercises = active.exercises
+    .map(({ id, name, sets }) => ({ id, name, sets: sets.filter((st) => st.done).map(({ weight, reps }) => ({ weight, reps })) }))
+    .filter((e) => e.sets.length);
+  if (!exercises.length) return null;
+  return { id: active.id, name: active.name.trim() || 'Workout', templateId: active.templateId, startedAt: active.startedAt, endedAt: Date.now(), exercises };
+}
+
 export const num = (v) => {
   const n = parseFloat(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : null;
@@ -85,6 +113,18 @@ export function previousSets(workouts, name) {
     if (ex && ex.sets.length) return ex.sets;
   }
   return [];
+}
+
+// Heaviest set (most reps on a tie) from the last session that had this exercise: the working weight to suggest.
+export function topSet(workouts, name) {
+  let top = null;
+  for (const st of previousSets(workouts, name)) {
+    const w = num(st.weight);
+    const r = num(st.reps);
+    if (w === null && r === null) continue;
+    if (!top || (w ?? 0) > (num(top.weight) ?? 0) || ((w ?? 0) === (num(top.weight) ?? 0) && (r ?? 0) > (num(top.reps) ?? 0))) top = st;
+  }
+  return top;
 }
 
 export function bestSet(sets) {

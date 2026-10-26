@@ -15,7 +15,7 @@ const startOfWeek = (t) => {
 };
 const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
-export default function OverviewScreen({ state, openBackup }) {
+export default function OverviewScreen({ state, openSettings }) {
   const scrollRef = useRef(null);
   const perDay = new Map();
   for (const w of state.workouts) {
@@ -49,7 +49,7 @@ export default function OverviewScreen({ state, openBackup }) {
     <ScrollView style={s.screen} contentContainerStyle={s.content}>
       <View style={[s.row, { justifyContent: 'space-between' }]}>
         <Text style={s.title}>Overview</Text>
-        <Pressable hitSlop={12} onPress={openBackup} accessibilityLabel="Backup">
+        <Pressable hitSlop={12} onPress={openSettings} accessibilityLabel="Settings">
           <Text style={{ color: colors.muted, fontSize: 22, fontWeight: '900' }}>•••</Text>
         </Pressable>
       </View>

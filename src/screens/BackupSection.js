@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, s } from '../theme';
 import { confirm } from '../store';
 
@@ -75,7 +75,7 @@ function pickFile() {
   });
 }
 
-export default function BackupScreen({ state, update, close }) {
+export default function BackupSection({ state, update }) {
   const [paste, setPaste] = useState('');
   const [status, setStatus] = useState(null);
   const web = Platform.OS === 'web';
@@ -104,66 +104,46 @@ export default function BackupScreen({ state, update, close }) {
         setPaste('');
         setStatus({ ok: true, text: `Imported ${summary(data)}.` });
       },
-      'Import'
+      'Import',
     );
   };
 
   return (
-    <View style={s.screen}>
-      <View style={styles.header}>
-        <Pressable hitSlop={12} onPress={close}>
-          <Text style={[s.link, { color: colors.muted }]}>DONE</Text>
+    <View>
+      <Text style={s.muted}>
+        Your data lives only on this device. Export a JSON file of all templates and workout history to keep a copy or move it to
+        another phone.
+      </Text>
+
+      <Pressable style={[s.btn, { marginTop: 20 }]} onPress={exportData}>
+        <Text style={s.btnText}>EXPORT JSON</Text>
+      </Pressable>
+
+      {web ? (
+        <Pressable style={[styles.outline, { marginTop: 12 }]} onPress={() => pickFile().then(importText)}>
+          <Text style={s.link}>IMPORT JSON FILE</Text>
         </Pressable>
-        <Text style={[s.text, { fontWeight: '700' }]}>Backup</Text>
-        <View style={{ width: 44 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-        <Text style={s.muted}>
-          Your data lives only on this device. Export a JSON file of all templates and workout history to keep a copy or move
-          it to another phone.
-        </Text>
-
-        <Pressable style={[s.btn, { marginTop: 20 }]} onPress={exportData}>
-          <Text style={s.btnText}>EXPORT JSON</Text>
-        </Pressable>
-
-        {web ? (
-          <Pressable style={[styles.outline, { marginTop: 12 }]} onPress={() => pickFile().then(importText)}>
-            <Text style={s.link}>IMPORT JSON FILE</Text>
+      ) : (
+        <View style={{ marginTop: 20 }}>
+          <TextInput
+            value={paste}
+            onChangeText={setPaste}
+            placeholder="Paste exported JSON here"
+            placeholderTextColor={colors.muted}
+            multiline
+            style={[s.input, { minHeight: 120, textAlignVertical: 'top', fontSize: 13 }]}
+          />
+          <Pressable style={[styles.outline, { marginTop: 12 }]} onPress={() => importText(paste)}>
+            <Text style={s.link}>IMPORT</Text>
           </Pressable>
-        ) : (
-          <View style={{ marginTop: 20 }}>
-            <TextInput
-              value={paste}
-              onChangeText={setPaste}
-              placeholder="Paste exported JSON here"
-              placeholderTextColor={colors.muted}
-              multiline
-              style={[s.input, { minHeight: 120, textAlignVertical: 'top', fontSize: 13 }]}
-            />
-            <Pressable style={[styles.outline, { marginTop: 12 }]} onPress={() => importText(paste)}>
-              <Text style={s.link}>IMPORT</Text>
-            </Pressable>
-          </View>
-        )}
+        </View>
+      )}
 
-        {status && (
-          <Text style={[s.muted, { marginTop: 16, color: status.ok ? colors.green : colors.danger }]}>{status.text}</Text>
-        )}
-      </ScrollView>
+      {status && <Text style={[s.muted, { marginTop: 16, color: status.ok ? colors.green : colors.danger }]}>{status.text}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
   outline: { borderWidth: 1, borderColor: colors.accent, borderRadius: 6, paddingVertical: 12, alignItems: 'center' },
 });

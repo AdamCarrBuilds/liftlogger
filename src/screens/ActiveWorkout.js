@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, numberKeyboard, s } from '../theme';
-import { confirm, fmtSet, num, previousSets, uid } from '../store';
+import { colors, s } from '../theme';
+import { confirm, finishedWorkout, fmtSet, num, previousSets, topSet, uid } from '../store';
+import { ding } from '../sound';
 import Elapsed from '../Elapsed';
 
 export default function ActiveWorkout({ state, update, close, onFinished }) {
@@ -38,14 +39,11 @@ export default function ActiveWorkout({ state, update, close, onFinished }) {
   };
 
   const finish = () => {
-    const exercises = w.exercises
-      .map(({ id, name, sets }) => ({ id, name, sets: sets.filter((st) => st.done).map(({ weight, reps }) => ({ weight, reps })) }))
-      .filter((e) => e.sets.length);
-    if (!exercises.length) {
+    const done = finishedWorkout(w);
+    if (!done) {
       confirm('No completed sets', 'Tick off at least one set, or discard this workout?', discardNow, 'Discard');
       return;
     }
-    const done = { id: w.id, name: w.name.trim() || 'Workout', templateId: w.templateId, startedAt: w.startedAt, endedAt: Date.now(), exercises };
     update((prev) => ({ active: null, workouts: [done, ...prev.workouts].sort((a, b) => b.startedAt - a.startedAt) }));
     onFinished();
   };
@@ -91,6 +89,7 @@ export default function ActiveWorkout({ state, update, close, onFinished }) {
             key={ex.id}
             ex={ex}
             prev={previousSets(state.workouts, ex.name)}
+            top={topSet(state.workouts, ex.name)}
             onRename={(name) => setExercise(ex.id, () => ({ name }))}
             onRemove={() =>
               confirm('Remove exercise', `Remove ${ex.name}?`, () =>
@@ -138,7 +137,7 @@ export default function ActiveWorkout({ state, update, close, onFinished }) {
   );
 }
 
-function ExerciseBlock({ ex, prev, onRename, onRemove, onSet, onAddSet, onRemoveSet }) {
+function ExerciseBlock({ ex, prev, top, onRename, onRemove, onSet, onAddSet, onRemoveSet }) {
   return (
     <View style={{ marginTop: 20 }}>
       <View style={[s.row, { justifyContent: 'space-between' }]}>
@@ -163,14 +162,18 @@ function ExerciseBlock({ ex, prev, onRename, onRemove, onSet, onAddSet, onRemove
 
       {ex.sets.map((st, i) => {
         const p = prev[i];
-        const wPh = p ? String(p.weight ?? '') : '';
-        const rPh = p ? String(p.reps ?? '') : (ex.target || '').split('-')[0] || '';
+        // Suggest the working weight: the last set entered this session, else last session's top set.
+        const earlier = ex.sets.slice(0, i).reverse().find((x) => x.weight !== '' || x.reps !== '');
+        const sug = earlier || top;
+        const wPh = sug && sug.weight !== '' ? String(sug.weight) : '';
+        const rPh = sug && sug.reps !== '' ? String(sug.reps) : (ex.target || '').split('-')[0] || '';
         const toggle = () => {
-          // Ticking an empty set accepts the greyed-out suggestion (previous session / target).
+          // Ticking an empty set accepts the greyed-out suggestion.
           const patch = { done: !st.done };
           if (!st.done) {
             if (st.weight === '' && wPh !== '') patch.weight = wPh;
             if (st.reps === '' && rPh !== '') patch.reps = rPh;
+            ding();
           }
           onSet(i, patch);
         };
@@ -186,7 +189,7 @@ function ExerciseBlock({ ex, prev, onRename, onRemove, onSet, onAddSet, onRemove
             <Text style={[s.muted, styles.colPrev, { textAlign: 'center' }]} numberOfLines={1}>
               {p ? fmtSet(p) : '—'}
             </Text>
-            <NumInput value={st.weight} placeholder={wPh} onChange={(weight) => onSet(i, { weight })} done={st.done} />
+            <NumInput value={st.weight} placeholder={wPh} onChange={(weight) => onSet(i, { weight })} done={st.done} signed />
             <NumInput value={st.reps} placeholder={rPh} onChange={(reps) => onSet(i, { reps })} done={st.done} />
             <Pressable style={[styles.colCheck, styles.check, st.done && styles.checkDone]} onPress={toggle}>
               <Text style={{ color: st.done ? '#fff' : colors.muted, fontSize: 18, fontWeight: '700' }}>✓</Text>
@@ -202,26 +205,37 @@ function ExerciseBlock({ ex, prev, onRename, onRemove, onSet, onAddSet, onRemove
   );
 }
 
-function NumInput({ value, placeholder, onChange, done }) {
+function NumInput({ value, placeholder, onChange, done, signed }) {
   // Accept anything number-like while typing, including a leading minus (assisted / counterweight lifts).
   const clean = (t) => t.replace(',', '.').replace(/[^0-9.\-]/g, '').replace(/(?!^)-/g, '');
   const invalid = value !== '' && value !== '-' && num(value) === null;
+  // Phone number pads have no minus key, so weights get a small ± key that flips the sign.
+  const flip = () => {
+    const base = value !== '' ? String(value) : placeholder || '';
+    onChange(base.startsWith('-') ? base.slice(1) : '-' + base);
+  };
   return (
-    <TextInput
-      value={String(value)}
-      onChangeText={(t) => onChange(clean(t))}
-      placeholder={placeholder}
-      placeholderTextColor="#6f7880"
-      keyboardType={numberKeyboard}
-      selectTextOnFocus
-      style={[
-        s.input,
-        styles.colNum,
-        { textAlign: 'center', marginHorizontal: 4, paddingHorizontal: 4 },
-        done && { backgroundColor: 'transparent' },
-        invalid && { color: colors.danger },
-      ]}
-    />
+    <View style={[styles.colNum, { marginHorizontal: 4 }]}>
+      <TextInput
+        value={String(value)}
+        onChangeText={(t) => onChange(clean(t))}
+        placeholder={placeholder}
+        placeholderTextColor="#6f7880"
+        inputMode={signed ? 'decimal' : 'numeric'}
+        selectTextOnFocus
+        style={[
+          s.input,
+          { textAlign: 'center', paddingHorizontal: 4 },
+          done && { backgroundColor: 'transparent' },
+          invalid && { color: colors.danger },
+        ]}
+      />
+      {signed && !done && (
+        <Pressable onPress={flip} hitSlop={6} style={styles.sign} accessibilityLabel="Make negative or positive">
+          <Text style={{ color: '#7d868e', fontSize: 12 }}>±</Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -247,5 +261,6 @@ const styles = StyleSheet.create({
   colCheck: { width: 40, marginLeft: 4 },
   check: { height: 36, borderRadius: 6, backgroundColor: colors.input, alignItems: 'center', justifyContent: 'center' },
   checkDone: { backgroundColor: colors.green },
+  sign: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 18, alignItems: 'center', justifyContent: 'center' },
   suggestion: { paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
 });

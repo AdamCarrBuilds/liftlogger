@@ -23,7 +23,7 @@ export default function TemplateEditor({ update, template, close }) {
       name: name.trim() || 'New template',
       exercises: exercises
         .filter((e) => e.name.trim())
-        .map(({ name: n, sets, reps }) => ({ name: n.trim(), sets: Math.max(1, sets), reps: reps.trim() })),
+        .map(({ name: n, sets, reps, note }) => ({ name: n.trim(), sets: Math.max(1, sets), reps: reps.trim(), ...(note && { note }) })),
     };
     update((prev) => ({
       templates: template.id ? prev.templates.map((x) => (x.id === t.id ? t : x)) : [...prev.templates, t],

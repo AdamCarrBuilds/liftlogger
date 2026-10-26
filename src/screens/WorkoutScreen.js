@@ -13,6 +13,7 @@ export function workoutFromTemplate(template) {
           id: uid(),
           name: ex.name,
           target: ex.reps || '',
+          note: ex.note || '',
           sets: Array.from({ length: Math.max(1, ex.sets) }, () => ({ weight: '', reps: '', done: false })),
         }))
       : [],

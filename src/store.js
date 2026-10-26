@@ -1,13 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { seedTemplates } from './seed';
+import { SEED_VERSION, seedTemplates, v1SeedTemplates } from './seed';
 
 const KEY = 'liftlogger:v1';
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-const initial = { templates: seedTemplates, workouts: [], active: null };
+const initial = { templates: seedTemplates, workouts: [], active: null, seedVersion: SEED_VERSION };
+
+const sameExercises = (a, b) =>
+  a.length === b.length && a.every((e, i) => e.name === b[i][0] && e.sets === b[i][1] && e.reps === b[i][2]);
+
+// Swap the old starter templates for the current plan, but keep any the user has edited.
+function migrate(saved) {
+  if ((saved.seedVersion || 1) >= SEED_VERSION) return saved;
+  const kept = (saved.templates || []).filter((t) => {
+    const v1 = v1SeedTemplates[t.id];
+    return !(v1 && sameExercises(t.exercises, v1));
+  });
+  const ids = new Set(kept.map((t) => t.id));
+  return { ...saved, templates: [...seedTemplates.filter((t) => !ids.has(t.id)), ...kept], seedVersion: SEED_VERSION };
+}
 
 // Whole app state lives in one JSON blob — small enough for a personal log.
 export function useStore() {
@@ -16,7 +30,7 @@ export function useStore() {
 
   useEffect(() => {
     AsyncStorage.getItem(KEY)
-      .then((raw) => setState(raw ? { ...initial, ...JSON.parse(raw) } : initial))
+      .then((raw) => setState(raw ? migrate({ ...initial, seedVersion: 1, ...JSON.parse(raw) }) : initial))
       .catch(() => setState(initial))
       .finally(() => (loaded.current = true));
   }, []);

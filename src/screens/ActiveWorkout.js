@@ -59,7 +59,7 @@ export default function ActiveWorkout({ state, update, close, onFinished }) {
     const t = {
       id: uid(),
       name: w.name.trim() || 'New template',
-      exercises: w.exercises.map((e) => ({ name: e.name, sets: e.sets.length, reps: e.target || '' })),
+      exercises: w.exercises.map((e) => ({ name: e.name, sets: e.sets.length, reps: e.target || '', ...(e.note && { note: e.note }) })),
     };
     update((prev) => ({ templates: [...prev.templates, t] }));
     confirm('Template saved', `"${t.name}" added to My Templates.`, () => {});
@@ -147,7 +147,11 @@ function ExerciseBlock({ ex, prev, onRename, onRemove, onSet, onAddSet, onRemove
           <Text style={{ color: colors.muted, fontSize: 18, paddingHorizontal: 6 }}>✕</Text>
         </Pressable>
       </View>
-      {!!ex.target && <Text style={[s.muted, { fontSize: 12, marginBottom: 4 }]}>Target {ex.target} reps</Text>}
+      {!!(ex.target || ex.note) && (
+        <Text style={[s.muted, { fontSize: 12, marginBottom: 4 }]}>
+          {[ex.target && `Target ${ex.target} reps`, ex.note].filter(Boolean).join(' · ')}
+        </Text>
+      )}
 
       <View style={[s.row, styles.tableHead]}>
         <Text style={[styles.th, styles.colSet]}>SET</Text>

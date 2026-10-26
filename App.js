@@ -8,6 +8,7 @@ import HistoryScreen from './src/screens/HistoryScreen';
 import WorkoutScreen from './src/screens/WorkoutScreen';
 import ActiveWorkout from './src/screens/ActiveWorkout';
 import TemplateEditor from './src/screens/TemplateEditor';
+import BackupScreen from './src/screens/BackupScreen';
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: '▦' },
@@ -21,6 +22,7 @@ export default function App() {
   const [workoutOpen, setWorkoutOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [dialog, setDialog] = useState(null);
+  const [backupOpen, setBackupOpen] = useState(false);
 
   useEffect(() => setConfirmHandler(setDialog), []);
 
@@ -37,6 +39,7 @@ export default function App() {
     update,
     openWorkout: () => setWorkoutOpen(true),
     editTemplate: setEditingTemplate,
+    openBackup: () => setBackupOpen(true),
   };
 
   return (
@@ -80,6 +83,12 @@ export default function App() {
       {editingTemplate && (
         <View style={StyleSheet.absoluteFill}>
           <TemplateEditor {...screenProps} template={editingTemplate} close={() => setEditingTemplate(null)} />
+        </View>
+      )}
+
+      {backupOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <BackupScreen {...screenProps} close={() => setBackupOpen(false)} />
         </View>
       )}
 

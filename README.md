@@ -7,7 +7,7 @@ Minimal workout tracker built with React Native (Expo). Runs on iOS/Android via 
 - **History** – finished workouts by month with best set, duration and volume. Tap a card for all sets / delete.
 - **Overview** – GitHub-style heatmap of the last 12 months plus a week-by-week count.
 
-Data is stored on-device (AsyncStorage / localStorage on web).
+Data is stored on-device (AsyncStorage / localStorage on web). Overview → ••• → Backup exports all templates and history as JSON and imports it back (merged by id).
 
 ```bash
 npm install

@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, s } from '../theme';
 
 const WEEKS = 52;
@@ -15,7 +15,7 @@ const startOfWeek = (t) => {
 };
 const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
-export default function OverviewScreen({ state }) {
+export default function OverviewScreen({ state, openBackup }) {
   const scrollRef = useRef(null);
   const perDay = new Map();
   for (const w of state.workouts) {
@@ -47,7 +47,12 @@ export default function OverviewScreen({ state }) {
 
   return (
     <ScrollView style={s.screen} contentContainerStyle={s.content}>
-      <Text style={s.title}>Overview</Text>
+      <View style={[s.row, { justifyContent: 'space-between' }]}>
+        <Text style={s.title}>Overview</Text>
+        <Pressable hitSlop={12} onPress={openBackup} accessibilityLabel="Backup">
+          <Text style={{ color: colors.muted, fontSize: 22, fontWeight: '900' }}>•••</Text>
+        </Pressable>
+      </View>
 
       <View style={[s.row, { gap: 10, marginBottom: 20 }]}>
         <Stat label="This week" value={weeks[WEEKS - 1].total} />
